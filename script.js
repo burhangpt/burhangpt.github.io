@@ -21,10 +21,23 @@
   const TOKEN_KEY = 'burhangpt_token';
   const MODEL_KEY = 'burhangpt_model';
   const SIDEBAR_KEY = 'burhangpt_sidebar_collapsed';
+  const GUEST_KEY = 'burhangpt_guest_usage';
+  const SETTINGS_KEY = 'burhangpt_settings';
+  const guestUsage = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(GUEST_KEY) || '{}');
+      if (saved.resetAt > Date.now()) return saved;
+    } catch {}
+    return { count: 0, resetAt: Date.now() + 86400000 };
+  })();
 
   const state = {
     token: localStorage.getItem(TOKEN_KEY),
     user: null,
+    guest: false,
+    guestUsed: guestUsage.count || 0,
+    googleEnabled: false,
+    githubEnabled: false,
     models: [],
     model: localStorage.getItem(MODEL_KEY) || 'fast',
     conversations: [],
@@ -35,6 +48,7 @@
     autoScroll: true,
     authMode: 'login',
     ctxTargetId: null,
+    attachments: [],
   };
 
   const $ = (id) => document.getElementById(id);
@@ -43,6 +57,7 @@
     authUser: $('auth-username'), authPass: $('auth-password'), authPass2: $('auth-password2'),
     authPass2Wrap: $('auth-password2-wrap'), authError: $('auth-error'), authSubmit: $('auth-submit'),
     authSwitch: $('auth-switch'), authSwitchText: $('auth-switch-text'),
+    guestBtn: $('guest-btn'), guestInfo: $('guest-info'), googleWrap: $('google-wrap'), googleBtn: $('google-btn'), githubBtn: $('github-btn'),
 
     app: $('app'), sidebar: $('sidebar'), overlay: $('sidebar-overlay'),
     openSidebar: $('open-sidebar-btn'), collapseSidebar: $('collapse-sidebar-btn'), expandSidebar: $('expand-sidebar-btn'),
@@ -57,11 +72,15 @@
     chat: $('chat-container'), emptyState: $('empty-state'), messages: $('messages'), scrollBtn: $('scroll-bottom-btn'),
     composer: $('composer'), composerCenter: $('composer-center'), composerBottom: $('composer-bottom'),
     form: $('chat-form'), input: $('user-input'), send: $('send-btn'), stop: $('stop-btn'),
+    attach: $('attach-btn'), fileInput: $('file-input'), attachPreview: $('attach-preview'), mic: $('mic-btn'), quickPrompts: document.querySelectorAll('.quick-prompt'),
+    settings: $('settings-modal'), settingsBtn: $('settings-btn'), settingsClose: $('settings-close'), settingsSave: $('settings-save'),
+    settingsReset: $('settings-reset'), persona: $('set-persona'), temperature: $('set-temp'), tempValue: $('set-temp-val'),
+    provider: $('set-provider'), apiKey: $('set-key'), keyToggle: $('set-key-toggle'), autoSpeak: $('set-autospeak'), byokStatus: $('byok-status'),
 
     ctxMenu: $('ctx-menu'),
   };
 
-  marked.setOptions({ gfm: true, breaks: true, headerIds: false, mangle: false });
+  if (window.marked?.setOptions) window.marked.setOptions({ gfm: true, breaks: true, headerIds: false, mangle: false });
 
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -96,6 +115,7 @@
   // AUTH
   // ---------------------------------------------------------------------------
   function showAuth() {
+    state.guest = false;
     el.app.classList.add('hidden');
     el.app.classList.remove('flex');
     el.authView.classList.remove('hidden');
@@ -109,8 +129,10 @@
     el.authView.classList.remove('flex');
     el.app.classList.remove('hidden');
     el.app.classList.add('flex');
-    el.userName.textContent = state.user.username;
-    el.userAvatar.textContent = state.user.username.slice(0, 1).toUpperCase();
+    const name = state.guest ? 'Misafir' : state.user.username;
+    el.userName.textContent = name;
+    el.userAvatar.textContent = name.slice(0, 1).toUpperCase();
+    el.guestInfo.textContent = `(kalan ${Math.max(0, 5 - state.guestUsed)} mesaj)`;
   }
 
   function setAuthMode(mode) {
@@ -122,10 +144,47 @@
     el.authPass.autocomplete = reg ? 'new-password' : 'current-password';
     el.authSwitchText.textContent = reg ? 'Zaten hesabın var mı?' : 'Hesabın yok mu?';
     el.authSwitch.textContent = reg ? 'Giriş yap' : 'Kaydol';
+    el.googleWrap.classList.toggle('hidden', reg || (!state.googleEnabled && !state.githubEnabled));
     el.authError.classList.add('hidden');
   }
 
+  async function setupGoogleLogin() {
+    try {
+      const config = await api('/api/auth/google/config');
+      state.googleEnabled = Boolean(config.enabled && config.client_id);
+      const github = await api('/api/auth/github/config');
+      state.githubEnabled = Boolean(github.enabled && github.client_id);
+      el.githubBtn.classList.toggle('hidden', !state.githubEnabled);
+      setAuthMode(state.authMode);
+      if (!state.googleEnabled) return;
+      const render = () => {
+        if (!window.google?.accounts?.id) return false;
+        window.google.accounts.id.initialize({ client_id: config.client_id, callback: window.handleGoogleCredential });
+        window.google.accounts.id.renderButton(el.googleBtn, { theme: 'filled_black', size: 'large', width: 320, text: 'continue_with', shape: 'pill' });
+        setAuthMode(state.authMode);
+        return true;
+      };
+      if (!render()) {
+        let attempts = 0;
+        const timer = window.setInterval(() => { if (render() || ++attempts >= 20) window.clearInterval(timer); }, 500);
+      }
+    } catch {}
+  }
+
+  window.handleGoogleCredential = async ({ credential }) => {
+    try {
+      const data = await api('/api/auth/google', { method: 'POST', body: { credential } });
+      state.token = data.token; state.user = data.user; state.guest = false;
+      localStorage.setItem(TOKEN_KEY, data.token);
+      await bootApp();
+    } catch (err) { showAuthError(err.message); }
+  };
+
+  el.githubBtn.addEventListener('click', () => { window.location.href = `${API_BASE}/api/auth/github/start`; });
+
   el.authSwitch.addEventListener('click', () => setAuthMode(state.authMode === 'login' ? 'register' : 'login'));
+
+  el.guestBtn.addEventListener('click', () => { state.token = null; state.user = null; state.guest = true; bootApp(); });
 
   el.authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -161,12 +220,38 @@
 
   el.logout.addEventListener('click', async () => {
     closeUserMenu();
+    if (state.guest) { showAuth(); return; }
     try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
     state.conversations = [];
     state.currentId = null;
     state.messages = [];
     handleUnauthorized();
   });
+
+  function readSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { return {}; }
+  }
+  function openSettings() {
+    const settings = readSettings();
+    el.persona.value = settings.persona || '';
+    el.temperature.value = settings.temperature ?? '';
+    el.tempValue.textContent = settings.temperature == null ? 'Varsayılan' : settings.temperature;
+    el.provider.value = settings.provider || '';
+    el.apiKey.value = settings.key || '';
+    el.autoSpeak.checked = Boolean(settings.autoSpeak);
+    el.settings.classList.remove('hidden'); el.settings.classList.add('flex');
+  }
+  function closeSettings() { el.settings.classList.add('hidden'); el.settings.classList.remove('flex'); }
+  function saveSettings() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ persona: el.persona.value.trim(), temperature: el.temperature.value ? Number(el.temperature.value) : null, provider: el.provider.value, key: el.apiKey.value, autoSpeak: el.autoSpeak.checked }));
+    closeSettings();
+  }
+  el.settingsBtn.addEventListener('click', () => { closeUserMenu(); openSettings(); });
+  el.settingsClose.addEventListener('click', closeSettings);
+  el.settingsSave.addEventListener('click', saveSettings);
+  el.settingsReset.addEventListener('click', () => { localStorage.removeItem(SETTINGS_KEY); openSettings(); });
+  el.temperature.addEventListener('input', () => { el.tempValue.textContent = el.temperature.value; });
+  el.keyToggle.addEventListener('click', () => { el.apiKey.type = el.apiKey.type === 'password' ? 'text' : 'password'; });
 
   // ---------------------------------------------------------------------------
   // MODELLER
@@ -194,7 +279,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm text-gpt-text">${escapeHtml(m.name)}</p>
-          <p class="text-xs text-gpt-dim">${escapeHtml(m.description || '')}</p>
+          <p class="text-xs text-gpt-dim">${escapeHtml(m.description || '')}${m.providers?.length ? ` · ${escapeHtml(m.providers.join(' / '))}` : ''}</p>
         </div>
         <div class="w-5 h-5 shrink-0 text-gpt-text ${active ? '' : 'invisible'}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
@@ -254,6 +339,7 @@
   // SOHBET GEÇMİŞİ
   // ---------------------------------------------------------------------------
   async function loadConversations() {
+    if (state.guest) { state.conversations = []; renderHistory(); return; }
     try { state.conversations = await api('/api/conversations'); } catch { state.conversations = []; }
     renderHistory();
   }
@@ -337,6 +423,24 @@
       renderHistory();
     } catch (err) { alert(err.message); }
   });
+
+  async function exportConversation(format) {
+    const id = state.ctxTargetId; closeCtxMenu();
+    if (!id) return;
+    const conv = await api(`/api/conversations/${id}`);
+    if (format === 'print') {
+      const popup = window.open('', '_blank');
+      if (!popup) return;
+      popup.document.write(`<title>${escapeHtml(conv.title)}</title><pre style="white-space:pre-wrap;font:16px sans-serif">${escapeHtml(conv.messages.map((m) => `${m.role === 'user' ? 'Sen' : 'BurhanGPT'}:\n${m.content}`).join('\n\n'))}</pre>`);
+      popup.document.close(); popup.print(); return;
+    }
+    const body = format === 'json' ? JSON.stringify(conv, null, 2) : `# ${conv.title}\n\n${conv.messages.map((m) => `## ${m.role === 'user' ? 'Sen' : 'BurhanGPT'}\n\n${m.content}`).join('\n\n')}`;
+    const blob = new Blob([body], { type: format === 'json' ? 'application/json' : 'text/markdown' });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `burhangpt-${format}.${format === 'json' ? 'json' : 'md'}`; link.click(); URL.revokeObjectURL(link.href);
+  }
+  el.ctxMenu.querySelector('[data-action="export-md"]').addEventListener('click', () => exportConversation('md'));
+  el.ctxMenu.querySelector('[data-action="export-json"]').addEventListener('click', () => exportConversation('json'));
+  el.ctxMenu.querySelector('[data-action="print"]').addEventListener('click', () => exportConversation('print'));
 
   el.ctxMenu.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     const id = state.ctxTargetId; closeCtxMenu();
@@ -480,16 +584,21 @@
   // ---------------------------------------------------------------------------
   function renderMarkdown(target, text) {
     target.dataset.raw = text || '';
-    target.innerHTML = DOMPurify.sanitize(marked.parse(text || ''), { ADD_ATTR: ['target'] });
+    const markdownHtml = window.marked?.parse ? window.marked.parse(text || '') : escapeHtml(text || '').replace(/\n/g, '<br>');
+    target.innerHTML = window.DOMPurify?.sanitize
+      ? DOMPurify.sanitize(markdownHtml, { ADD_ATTR: ['target'] })
+      : markdownHtml;
 
     target.querySelectorAll('pre > code').forEach((codeEl) => {
       const pre = codeEl.parentElement;
       const m = /language-([\w+#-]+)/.exec(codeEl.className);
       const lang = m ? m[1] : '';
       try {
-        codeEl.innerHTML = lang && hljs.getLanguage(lang)
-          ? hljs.highlight(codeEl.textContent, { language: lang }).value
-          : hljs.highlightAuto(codeEl.textContent).value;
+        if (window.hljs) {
+          codeEl.innerHTML = lang && hljs.getLanguage(lang)
+            ? hljs.highlight(codeEl.textContent, { language: lang }).value
+            : hljs.highlightAuto(codeEl.textContent).value;
+        }
       } catch {}
       codeEl.classList.add('hljs');
 
@@ -515,6 +624,13 @@
     });
 
     target.querySelectorAll('a').forEach((a) => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+    if (window.katex) {
+      target.querySelectorAll('p, li').forEach((node) => {
+        node.innerHTML = node.innerHTML.replace(/\\\((.+?)\\\)|\$\$([\s\S]+?)\$\$|\$([^$\n]+)\$/g, (match, inline, display, dollar) => {
+          try { return katex.renderToString(inline || display || dollar, { displayMode: Boolean(display), throwOnError: false }); } catch { return match; }
+        });
+      });
+    }
   }
 
   async function copyToClipboard(text) {
@@ -549,7 +665,7 @@
     el.input.style.height = 'auto';
     el.input.style.height = Math.min(el.input.scrollHeight, 208) + 'px';
   }
-  function updateSendState() { el.send.disabled = !el.input.value.trim() || state.streaming; }
+  function updateSendState() { el.send.disabled = (!el.input.value.trim() && !state.attachments.length) || state.streaming; }
   el.input.addEventListener('input', () => { autoResize(); updateSendState(); });
   el.input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
@@ -566,6 +682,52 @@
     updateSendState();
   }
   el.stop.addEventListener('click', () => state.abort && state.abort.abort());
+
+  el.attach.addEventListener('click', () => el.fileInput.click());
+  el.fileInput.addEventListener('change', async () => {
+    for (const file of [...el.fileInput.files]) {
+      if (file.type.startsWith('image/')) {
+        state.attachments.push({ type: 'image_url', image_url: { url: await readAsDataUrl(file) }, name: file.name });
+      } else if (file.type === 'application/pdf' && window.pdfjsLib) {
+        const buffer = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+        let text = '';
+        for (let pageNo = 1; pageNo <= Math.min(pdf.numPages, 20); pageNo += 1) {
+          const page = await pdf.getPage(pageNo);
+          const content = await page.getTextContent();
+          text += content.items.map((item) => item.str).join(' ') + '\n';
+        }
+        state.attachments.push({ type: 'text', text: `[${file.name}]\n${text.slice(0, 30000)}`, name: file.name });
+      } else if (file.type.startsWith('text/') || /\.(txt|md|csv|json|js|ts|py|java|c|cpp|html|css|xml|ya?ml|sql|sh|log)$/i.test(file.name)) {
+        state.attachments.push({ type: 'text', text: `[${file.name}]\n${(await file.text()).slice(0, 30000)}`, name: file.name });
+      } else {
+        alert(`${file.name} desteklenmiyor.`);
+      }
+    }
+    el.fileInput.value = ''; renderAttachmentPreview(); el.input.focus();
+  });
+  function readAsDataUrl(file) {
+    return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+  }
+  function renderAttachmentPreview() {
+    el.attachPreview.innerHTML = '';
+    el.attachPreview.classList.toggle('hidden', !state.attachments.length);
+    state.attachments.forEach((attachment, index) => {
+      const chip = document.createElement('span'); chip.className = 'chip';
+      chip.innerHTML = `<span>${escapeHtml(attachment.name || 'Ek')}</span><button type="button" aria-label="Eki kaldır">×</button>`;
+      chip.querySelector('button').addEventListener('click', () => { state.attachments.splice(index, 1); renderAttachmentPreview(); });
+      el.attachPreview.appendChild(chip);
+    });
+  }
+  el.mic.addEventListener('click', () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert('Bu tarayıcı sesle yazmayı desteklemiyor.');
+    const recognition = new SpeechRecognition(); recognition.lang = 'tr-TR'; recognition.interimResults = false;
+    el.mic.classList.add('mic-on');
+    recognition.onresult = (event) => { el.input.value += `${el.input.value ? ' ' : ''}${event.results[0][0].transcript}`; autoResize(); updateSendState(); };
+    recognition.onend = () => el.mic.classList.remove('mic-on'); recognition.start();
+  });
+  el.quickPrompts.forEach((button) => button.addEventListener('click', () => { el.input.value = button.dataset.prompt; autoResize(); updateSendState(); el.input.focus(); }));
 
   el.form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -588,7 +750,12 @@
     state.autoScroll = true;
     scrollToBottom();
 
-    await streamChat({ conversation_id: state.currentId, message: text, model: state.model });
+    const settings = readSettings();
+    const attachments = state.attachments.map(({ type, text: attachmentText, image_url: imageUrl }) => ({ type, text: attachmentText, image_url: imageUrl }));
+    state.attachments = []; renderAttachmentPreview();
+    await streamChat({ conversation_id: state.currentId, message: text, model: state.model, attachments,
+      system_prompt: settings.persona || null, temperature: settings.temperature ?? null,
+      byok_provider: settings.provider || null, byok_key: settings.key || null });
   }
 
   async function regenerate() {
@@ -626,9 +793,9 @@
     };
 
     try {
-      const res = await fetch(`${API_BASE}/api/chat`, {
+      const res = await fetch(`${API_BASE}${state.guest ? '/api/guest-chat' : '/api/chat'}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', Authorization: `Bearer ${state.token}` },
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) },
         body: JSON.stringify(payload),
         signal: state.abort.signal,
       });
@@ -697,6 +864,13 @@
       contentEl.classList.remove('typing-cursor');
       if (state.autoScroll) scrollToBottom();
       state.messages.push({ role: 'assistant', content: fullText });
+      if (state.guest && fullText && !fullText.startsWith('⚠️')) {
+        state.guestUsed += 1;
+        localStorage.setItem(GUEST_KEY, JSON.stringify({ count: state.guestUsed, resetAt: guestUsage.resetAt }));
+        el.guestInfo.textContent = `(kalan ${Math.max(0, 5 - state.guestUsed)} mesaj)`;
+      }
+      const settings = readSettings();
+      if (settings.autoSpeak && fullText && 'speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(fullText.replace(/[*_#`]/g, '')));
       state.abort = null;
       setStreaming(false);
       el.input.focus();
@@ -719,6 +893,13 @@
   async function init() {
     window.addEventListener('resize', () => { if (window.innerWidth >= 768) el.overlay.classList.add('hidden'); });
     placeComposer(true);
+    const authToken = new URLSearchParams(window.location.hash.slice(1)).get('auth_token');
+    if (authToken) {
+      state.token = authToken;
+      localStorage.setItem(TOKEN_KEY, authToken);
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    }
+    setupGoogleLogin();
 
     if (!state.token) return showAuth();
     try {

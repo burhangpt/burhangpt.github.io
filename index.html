@@ -5,25 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>BurhanGPT</title>
   <meta name="theme-color" content="#212121" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BurhanGPT" />
 
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gpt: {
-              main: '#212121', side: '#171717', input: '#2f2f2f', hover: '#2f2f2f',
-              hover2: '#424242', border: '#424242', text: '#ececec', muted: '#b4b4b4', dim: '#8e8ea0',
-            },
-          },
-          fontFamily: {
-            sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-          },
-        },
-      },
-    };
+    tailwind.config = { darkMode: 'class', theme: { extend: {
+      colors: { gpt: { main: '#212121', side: '#171717', input: '#2f2f2f', hover: '#2f2f2f', hover2: '#424242', border: '#424242', text: '#ececec', muted: '#b4b4b4', dim: '#8e8ea0' } },
+      fontFamily: { sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'] },
+    } } };
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -32,156 +27,130 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" />
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     html, body { height: 100%; background: #212121; }
     body { -webkit-font-smoothing: antialiased; }
     * { scrollbar-width: thin; scrollbar-color: #424242 transparent; }
-    *::-webkit-scrollbar { width: 6px; height: 6px; }
-    *::-webkit-scrollbar-thumb { background: #424242; border-radius: 9999px; }
-    *::-webkit-scrollbar-track { background: transparent; }
-
-    textarea { resize: none; }
-    textarea:focus, input:focus { outline: none; box-shadow: none; }
-
-    #sidebar { transition: transform .25s ease, width .25s ease, margin .25s ease; }
+    *::-webkit-scrollbar { width: 6px; height: 6px; } *::-webkit-scrollbar-thumb { background: #424242; border-radius: 9999px; } *::-webkit-scrollbar-track { background: transparent; }
+    textarea { resize: none; } textarea:focus, input:focus, select:focus { outline: none; box-shadow: none; }
+    #sidebar { transition: transform .25s ease, margin .25s ease; }
     @media (min-width: 768px) { #sidebar.collapsed { margin-left: -260px; } }
 
     .prose { max-width: none; color: #ececec; }
-    .prose :where(p) { margin: .75em 0; }
-    .prose :where(h1,h2,h3,h4) { color: #ececec; }
-    .prose :where(strong) { color: #ececec; }
-    .prose :where(a) { color: #7ab7ff; }
-    .prose :where(li) { margin: .25em 0; }
-    .prose :where(blockquote) { border-left-color: #424242; color: #b4b4b4; }
-    .prose :where(hr) { border-color: #424242; }
-    .prose :where(th) { color: #ececec; border-bottom-color: #424242; }
-    .prose :where(td) { border-bottom-color: #2f2f2f; }
+    .prose :where(p) { margin: .75em 0; } .prose :where(h1,h2,h3,h4,strong,th) { color: #ececec; }
+    .prose :where(a) { color: #7ab7ff; } .prose :where(li) { margin: .25em 0; }
+    .prose :where(blockquote) { border-left-color: #424242; color: #b4b4b4; } .prose :where(hr) { border-color: #424242; }
+    .prose :where(th) { border-bottom-color: #424242; } .prose :where(td) { border-bottom-color: #2f2f2f; }
     .prose :where(table) { display: block; overflow-x: auto; }
     .prose :where(code)::before, .prose :where(code)::after { content: none; }
     .prose :where(code):not(pre code) { background: #2f2f2f; color: #ececec; padding: .15em .4em; border-radius: .3rem; font-weight: 500; font-size: .9em; }
     .prose :where(pre) { margin: 0; padding: 0; background: transparent; }
+    .prose .katex-display { overflow-x: auto; overflow-y: hidden; padding: .25em 0; }
 
     .code-block { margin: 1rem 0; border-radius: .75rem; overflow: hidden; background: #0d0d0d; }
     .code-block-header { display: flex; align-items: center; justify-content: space-between; padding: .5rem 1rem; font-size: .75rem; background: #2f2f2f; color: #b4b4b4; }
-    .code-block pre { margin: 0 !important; }
-    .code-block pre code.hljs { background: #0d0d0d; padding: 1rem; font-size: .875rem; line-height: 1.65; }
-    .copy-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .4rem; border-radius: .375rem; color: #ececec; }
-    .copy-btn:hover { background: #424242; }
+    .code-block pre { margin: 0 !important; } .code-block pre code.hljs { background: #0d0d0d; padding: 1rem; font-size: .875rem; line-height: 1.65; }
+    .copy-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .4rem; border-radius: .375rem; color: #ececec; } .copy-btn:hover { background: #424242; }
 
-    .typing-cursor > :last-child::after, .typing-cursor:empty::after {
-      content: ''; display: inline-block; width: .55em; height: .55em; margin-left: .2em;
-      background: #ececec; border-radius: 9999px; vertical-align: baseline; animation: pulse 1s infinite;
-    }
+    .typing-cursor > :last-child::after, .typing-cursor:empty::after { content: ''; display: inline-block; width: .55em; height: .55em; margin-left: .2em; background: #ececec; border-radius: 9999px; vertical-align: baseline; animation: pulse 1s infinite; }
     @keyframes pulse { 50% { opacity: .3; } }
-
     .user-bubble { white-space: pre-wrap; word-break: break-word; }
-
     .menu-pop { animation: pop .12s ease-out; transform-origin: top left; }
     @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .mic-on { color: #ef4444 !important; animation: pulse 1s infinite; }
+    .chip { display: inline-flex; align-items: center; gap: .35rem; background: #424242; border-radius: .5rem; padding: .25rem .5rem; font-size: .75rem; max-width: 12rem; }
+    .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    input[type=range] { accent-color: #10a37f; }
   </style>
 </head>
 
 <body class="font-sans bg-gpt-main text-gpt-text h-screen overflow-hidden">
 
   <!-- ============================ AUTH ============================ -->
-  <div id="auth-view" class="hidden fixed inset-0 z-50 bg-gpt-main items-center justify-center px-4">
-    <div class="w-full max-w-[360px]">
-      <div class="flex justify-center mb-8">
-        <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center text-xl font-bold">B</div>
-      </div>
-      <h1 id="auth-title" class="text-[28px] font-semibold text-center mb-8">Tekrar hoş geldin</h1>
+  <div id="auth-view" class="flex fixed inset-0 z-50 bg-gpt-main items-center justify-center px-4 overflow-auto">
+    <div class="w-full max-w-[360px] py-8">
+      <div class="flex justify-center mb-6"><div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center text-xl font-bold">B</div></div>
+      <h1 id="auth-title" class="text-[28px] font-semibold text-center mb-6">Tekrar hoş geldin</h1>
 
-      <form id="auth-form" class="space-y-4" autocomplete="on">
-        <div>
-          <input id="auth-username" type="text" placeholder="Kullanıcı adı" autocomplete="username" required
-            class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
-        </div>
-        <div>
-          <input id="auth-password" type="password" placeholder="Şifre" autocomplete="current-password" required
-            class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
-        </div>
+      <div id="google-wrap" class="mb-4">
+        <div id="google-btn" class="flex justify-center min-h-[44px]"></div>
+        <button id="github-btn" type="button" class="hidden w-full h-11 rounded-full border border-gpt-border text-sm hover:bg-gpt-hover">GitHub ile devam et</button>
+        <div class="flex items-center gap-3 my-4 text-xs text-gpt-dim"><div class="flex-1 h-px bg-gpt-border"></div>veya<div class="flex-1 h-px bg-gpt-border"></div></div>
+      </div>
+
+      <form id="auth-form" class="space-y-3" autocomplete="on">
+        <input id="auth-username" type="text" placeholder="Kullanıcı adı" autocomplete="username" required
+          class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
+        <input id="auth-password" type="password" placeholder="Şifre" autocomplete="current-password" required
+          class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
         <div id="auth-password2-wrap" class="hidden">
           <input id="auth-password2" type="password" placeholder="Şifre (tekrar)" autocomplete="new-password"
             class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
         </div>
         <p id="auth-error" class="hidden text-sm text-red-400"></p>
-        <button id="auth-submit" type="submit"
-          class="w-full h-[52px] rounded-full bg-white text-black font-medium hover:bg-gpt-text transition-colors disabled:opacity-60">
-          Devam et
-        </button>
+        <button id="auth-submit" type="submit" class="w-full h-[52px] rounded-full bg-white text-black font-medium hover:bg-gpt-text transition-colors disabled:opacity-60">Devam et</button>
       </form>
 
-      <p class="text-center text-sm text-gpt-muted mt-6">
+      <p class="text-center text-sm text-gpt-muted mt-5">
         <span id="auth-switch-text">Hesabın yok mu?</span>
         <button id="auth-switch" type="button" class="text-[#10a37f] hover:underline ml-1">Kaydol</button>
       </p>
+      <button id="guest-btn" type="button" class="w-full mt-5 h-11 rounded-full border border-gpt-border text-sm hover:bg-gpt-hover">
+        Giriş yapmadan dene <span id="guest-info" class="text-gpt-dim"></span>
+      </button>
     </div>
   </div>
 
   <!-- ============================ APP ============================ -->
   <div id="app" class="hidden h-full w-full">
-
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
 
-    <!-- SIDEBAR -->
-    <aside id="sidebar"
-      class="fixed md:relative inset-y-0 left-0 z-40 w-[260px] shrink-0 flex flex-col bg-gpt-side -translate-x-full md:translate-x-0">
-
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-40 w-[260px] shrink-0 flex flex-col bg-gpt-side -translate-x-full md:translate-x-0">
       <div class="flex items-center justify-between h-14 px-3">
-        <div class="w-9 h-9 rounded-lg flex items-center justify-center">
-          <div class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">B</div>
-        </div>
+        <div class="w-9 h-9 flex items-center justify-center"><div class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">B</div></div>
         <button id="collapse-sidebar-btn" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted" title="Kenar çubuğunu kapat">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
         </button>
       </div>
-
       <nav class="px-2 space-y-0.5">
         <button id="new-chat-btn" class="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm hover:bg-gpt-hover">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          Yeni sohbet
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Yeni sohbet
         </button>
         <button id="search-toggle-btn" class="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm hover:bg-gpt-hover">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          Sohbetlerde ara
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Sohbetlerde ara
         </button>
-        <div id="search-wrap" class="hidden px-1 pt-1">
-          <input id="search-input" type="text" placeholder="Ara..."
-            class="w-full h-9 rounded-lg bg-gpt-input border border-gpt-border px-3 text-sm placeholder-gpt-dim" />
-        </div>
+        <div id="search-wrap" class="hidden px-1 pt-1"><input id="search-input" type="text" placeholder="Ara..." class="w-full h-9 rounded-lg bg-gpt-input border border-gpt-border px-3 text-sm placeholder-gpt-dim" /></div>
       </nav>
-
-      <div id="history-scroll" class="flex-1 overflow-y-auto px-2 mt-4 pb-2">
+      <div class="flex-1 overflow-y-auto px-2 mt-4 pb-2">
         <div id="history-groups"></div>
         <p id="history-empty" class="hidden px-3 py-4 text-xs text-gpt-dim">Henüz sohbet yok.</p>
       </div>
-
       <div class="p-2 relative">
         <div id="user-menu" class="hidden menu-pop absolute bottom-full left-2 right-2 mb-1 bg-gpt-input border border-gpt-border rounded-2xl p-1.5 shadow-xl z-50">
+          <button id="settings-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gpt-hover2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Ayarlar
+          </button>
           <button id="clear-all-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gpt-hover2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
-            Tüm sohbetleri sil
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>Tüm sohbetleri sil
           </button>
           <div class="h-px bg-gpt-border my-1"></div>
           <button id="logout-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gpt-hover2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            Çıkış yap
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span id="logout-label">Çıkış yap</span>
           </button>
         </div>
         <button id="user-btn" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gpt-hover text-sm">
           <div id="user-avatar" class="w-8 h-8 rounded-full bg-[#5436da] flex items-center justify-center text-white text-xs font-semibold">?</div>
-          <div class="flex-1 text-left leading-tight">
-            <p id="user-name" class="font-medium truncate">Kullanıcı</p>
-            <p class="text-xs text-gpt-dim">Ücretsiz</p>
-          </div>
+          <div class="flex-1 text-left leading-tight"><p id="user-name" class="font-medium truncate">Kullanıcı</p><p id="user-plan" class="text-xs text-gpt-dim">Ücretsiz</p></div>
         </button>
       </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="flex-1 flex flex-col min-w-0 h-full relative bg-gpt-main">
-
       <header class="flex items-center justify-between h-14 px-2 md:px-3 shrink-0 relative">
         <div class="flex items-center gap-1">
           <button id="open-sidebar-btn" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted md:hidden">
@@ -190,73 +159,126 @@
           <button id="expand-sidebar-btn" class="hidden w-9 h-9 rounded-lg hover:bg-gpt-hover md:flex items-center justify-center text-gpt-muted" title="Kenar çubuğunu aç">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
           </button>
-
           <div class="relative">
             <button id="model-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-gpt-hover text-lg font-medium text-gpt-muted">
               <span id="model-name" class="text-gpt-text">BurhanGPT</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
             </button>
             <div id="model-menu" class="hidden menu-pop absolute top-full left-0 mt-1 w-80 bg-gpt-input border border-gpt-border rounded-2xl p-1.5 shadow-2xl z-50">
-              <p class="px-3 py-2 text-xs text-gpt-dim">Model</p>
-              <div id="model-options"></div>
+              <p class="px-3 py-2 text-xs text-gpt-dim">Model</p><div id="model-options"></div>
+              <p class="px-3 pt-2 pb-1 text-[11px] text-gpt-dim">Görsel eklediğinde otomatik olarak görsel destekli mod kullanılır.</p>
             </div>
           </div>
         </div>
-
-        <button id="header-new-chat" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted md:hidden">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
+        <div class="flex items-center gap-1">
+          <button id="guest-pill" class="hidden items-center gap-1.5 px-3 h-8 rounded-full bg-gpt-input border border-gpt-border text-xs hover:bg-gpt-hover2">
+            <span id="guest-remaining"></span><span class="text-[#10a37f] font-medium">Kaydol</span>
+          </button>
+          <button id="header-new-chat" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted md:hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
       </header>
 
       <div id="chat-container" class="flex-1 overflow-y-auto">
-        <div id="empty-state" class="h-full flex flex-col items-center justify-center px-4 pb-16">
+        <div id="empty-state" class="h-full flex flex-col items-center justify-center px-4 pb-10">
           <h1 class="text-[28px] md:text-[32px] font-medium text-center mb-6">Bugün ne yapıyorsun?</h1>
           <div id="composer-center" class="w-full"></div>
+          <div id="quick-prompts" class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-3xl px-3 md:px-4 mt-3">
+            <button class="qp text-left p-3 rounded-xl border border-gpt-border hover:bg-gpt-hover" data-prompt="Şu kodu incele, hataları ve iyileştirme önerilerini madde madde yaz:\n\n">💻 <span class="block text-sm mt-1">Hızlıca kod incele</span></button>
+            <button class="qp text-left p-3 rounded-xl border border-gpt-border hover:bg-gpt-hover" data-prompt="Aşağıdaki metni 5 maddede özetle:\n\n">📝 <span class="block text-sm mt-1">Metin özetle</span></button>
+            <button class="qp text-left p-3 rounded-xl border border-gpt-border hover:bg-gpt-hover" data-prompt="Benimle İngilizce pratik yap. Günlük bir konu seç, kısa sorular sor ve hatalarımı nazikçe düzelt. Başla!">🇬🇧 <span class="block text-sm mt-1">İngilizce pratik yap</span></button>
+            <button class="qp text-left p-3 rounded-xl border border-gpt-border hover:bg-gpt-hover" data-prompt="Profesyonel bir e-posta taslağı hazırla. Konu: ">✉️ <span class="block text-sm mt-1">E-posta taslağı oluştur</span></button>
+          </div>
         </div>
         <div id="messages" class="hidden pt-2 pb-6"></div>
       </div>
 
-      <button id="scroll-bottom-btn"
-        class="hidden absolute left-1/2 -translate-x-1/2 bottom-[120px] w-8 h-8 rounded-full bg-gpt-input border border-gpt-border shadow flex items-center justify-center text-gpt-text hover:bg-gpt-hover2 z-10">
+      <button id="scroll-bottom-btn" class="hidden absolute left-1/2 -translate-x-1/2 bottom-[120px] w-8 h-8 rounded-full bg-gpt-input border border-gpt-border shadow flex items-center justify-center hover:bg-gpt-hover2 z-10">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
       </button>
-
       <div id="composer-bottom" class="shrink-0"></div>
     </main>
   </div>
 
-  <!-- COMPOSER (JS ile taşınır) -->
+  <!-- COMPOSER -->
   <div id="composer" class="w-full max-w-3xl mx-auto px-3 md:px-4">
-    <form id="chat-form" class="bg-gpt-input rounded-[26px] px-3 py-2 flex items-end gap-2 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-      <button type="button" id="attach-btn" title="Yakında" class="w-8 h-8 mb-0.5 rounded-full hover:bg-gpt-hover2 flex items-center justify-center text-gpt-text shrink-0">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-      </button>
-      <textarea id="user-input" rows="1" placeholder="Herhangi bir şey sor"
-        class="flex-1 bg-transparent border-0 text-[16px] leading-6 max-h-52 py-1.5 placeholder-gpt-dim text-gpt-text"></textarea>
-      <button id="send-btn" type="submit" disabled aria-label="Gönder"
-        class="w-8 h-8 mb-0.5 rounded-full flex items-center justify-center shrink-0 bg-white text-black transition-colors disabled:bg-[#676767] disabled:text-[#2f2f2f] disabled:cursor-not-allowed">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-      </button>
-      <button id="stop-btn" type="button" aria-label="Durdur"
-        class="hidden w-8 h-8 mb-0.5 rounded-full items-center justify-center shrink-0 bg-white text-black">
-        <span class="w-2.5 h-2.5 bg-black rounded-[2px]"></span>
-      </button>
+    <form id="chat-form" class="bg-gpt-input rounded-[26px] px-3 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+      <div id="attach-preview" class="hidden flex-wrap gap-2 px-1 pb-2"></div>
+      <div class="flex items-end gap-2">
+        <input id="file-input" type="file" multiple class="hidden" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.cs,.html,.css,.xml,.yaml,.yml,.sql,.sh,.log" />
+        <button type="button" id="attach-btn" title="Görsel veya dosya ekle" class="w-8 h-8 mb-0.5 rounded-full hover:bg-gpt-hover2 flex items-center justify-center text-gpt-text shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <textarea id="user-input" rows="1" placeholder="Herhangi bir şey sor" class="flex-1 bg-transparent border-0 text-[16px] leading-6 max-h-52 py-1.5 placeholder-gpt-dim text-gpt-text"></textarea>
+        <button type="button" id="mic-btn" title="Sesle yaz" class="w-8 h-8 mb-0.5 rounded-full hover:bg-gpt-hover2 flex items-center justify-center text-gpt-text shrink-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+        </button>
+        <button id="send-btn" type="submit" disabled aria-label="Gönder" class="w-8 h-8 mb-0.5 rounded-full flex items-center justify-center shrink-0 bg-white text-black transition-colors disabled:bg-[#676767] disabled:text-[#2f2f2f] disabled:cursor-not-allowed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+        <button id="stop-btn" type="button" aria-label="Durdur" class="hidden w-8 h-8 mb-0.5 rounded-full items-center justify-center shrink-0 bg-white text-black"><span class="w-2.5 h-2.5 bg-black rounded-[2px]"></span></button>
+      </div>
     </form>
-    <p class="text-center text-xs text-gpt-dim py-2">BurhanGPT hata yapabilir. Önemli bilgileri kontrol edin.</p>
+    <p class="text-center text-xs text-gpt-dim py-2">BurhanGPT hata yapabilir. Sohbetler hizmet kalitesi için kaydedilir ve site yöneticisi tarafından görülebilir.</p>
   </div>
 
-  <!-- Sohbet öğesi menüsü -->
-  <div id="ctx-menu" class="hidden menu-pop fixed z-[60] w-48 bg-gpt-input border border-gpt-border rounded-xl p-1.5 shadow-2xl">
-    <button data-action="rename" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gpt-hover2">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      Yeniden adlandır
-    </button>
-    <button data-action="delete" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-gpt-hover2">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
-      Sil
-    </button>
+  <!-- SOHBET MENÜSÜ -->
+  <div id="ctx-menu" class="hidden menu-pop fixed z-[60] w-56 bg-gpt-input border border-gpt-border rounded-xl p-1.5 shadow-2xl text-sm">
+    <button data-action="rename" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gpt-hover2">✏️ Yeniden adlandır</button>
+    <button data-action="export-md" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gpt-hover2">⬇️ Markdown indir</button>
+    <button data-action="export-json" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gpt-hover2">⬇️ JSON indir</button>
+    <button data-action="print" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gpt-hover2">🖨️ Yazdır / PDF</button>
+    <div class="h-px bg-gpt-border my-1"></div>
+    <button data-action="delete" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-gpt-hover2">🗑️ Sil</button>
+  </div>
+
+  <!-- AYARLAR -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-[70] bg-black/70 items-center justify-center p-4">
+    <div class="w-full max-w-lg max-h-[90vh] overflow-auto bg-gpt-side border border-gpt-border rounded-2xl p-5 space-y-5">
+      <div class="flex items-center justify-between"><h2 class="text-lg font-semibold">Ayarlar</h2><button id="settings-close" class="w-8 h-8 rounded-lg hover:bg-gpt-hover">✕</button></div>
+
+      <section>
+        <p class="text-sm font-medium">Kişilik / rol (system prompt)</p>
+        <p class="text-xs text-gpt-dim mb-2">BurhanGPT'nin nasıl davranmasını istediğini yaz. Örn: "Kısa ve samimi cevap ver, bana Burhan diye hitap et."</p>
+        <textarea id="set-persona" rows="4" maxlength="3000" class="w-full rounded-lg bg-gpt-input border border-gpt-border p-3 text-sm"></textarea>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between"><p class="text-sm font-medium">Yaratıcılık (temperature)</p><span id="set-temp-val" class="text-xs text-gpt-dim">Varsayılan</span></div>
+        <input id="set-temp" type="range" min="0" max="2" step="0.1" class="w-full mt-2" />
+        <div class="flex justify-between text-[11px] text-gpt-dim"><span>Kesin / tutarlı</span><span>Yaratıcı / çeşitli</span></div>
+        <button id="set-temp-reset" type="button" class="text-xs text-[#10a37f] mt-1 hover:underline">Varsayılana dön</button>
+      </section>
+
+      <section>
+        <p class="text-sm font-medium">Kendi API anahtarın <span class="text-gpt-dim font-normal">(isteğe bağlı)</span></p>
+        <p class="text-xs text-gpt-dim mb-2">Girersen istekler önce senin anahtarınla yapılır; misafir limiti uygulanmaz. Anahtar yalnızca bu tarayıcıda saklanır, sunucuda kaydedilmez ve loglanmaz.</p>
+        <div class="flex gap-2">
+          <select id="set-provider" class="h-10 rounded-lg bg-gpt-input border border-gpt-border px-2 text-sm">
+            <option value="">Kullanma</option><option value="groq">Groq</option><option value="gemini">Google Gemini</option><option value="cerebras">Cerebras</option><option value="openrouter">OpenRouter</option><option value="mistral">Mistral</option>
+          </select>
+          <input id="set-key" type="password" placeholder="API anahtarı" autocomplete="off" class="flex-1 h-10 rounded-lg bg-gpt-input border border-gpt-border px-3 text-sm" />
+          <button id="set-key-toggle" type="button" class="h-10 px-3 rounded-lg bg-gpt-input border border-gpt-border text-xs">Göster</button>
+        </div>
+        <p id="byok-status" class="text-xs text-gpt-dim mt-1"></p>
+      </section>
+
+      <section class="flex items-center justify-between">
+        <div><p class="text-sm font-medium">Yanıtları otomatik seslendir</p><p class="text-xs text-gpt-dim">Tarayıcının sesini kullanır.</p></div>
+        <input id="set-autospeak" type="checkbox" class="w-5 h-5" />
+      </section>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button id="settings-reset" class="px-4 h-10 rounded-full border border-gpt-border text-sm hover:bg-gpt-hover">Sıfırla</button>
+        <button id="settings-save" class="px-5 h-10 rounded-full bg-white text-black text-sm font-medium">Kaydet</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  </script>
 </body>
 </html>
