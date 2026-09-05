@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BurhanGPT</title>
+  <meta name="theme-color" content="#212121" />
+
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gpt: {
+              main: '#212121', side: '#171717', input: '#2f2f2f', hover: '#2f2f2f',
+              hover2: '#424242', border: '#424242', text: '#ececec', muted: '#b4b4b4', dim: '#8e8ea0',
+            },
+          },
+          fontFamily: {
+            sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" />
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+  <style>
+    html, body { height: 100%; background: #212121; }
+    body { -webkit-font-smoothing: antialiased; }
+    * { scrollbar-width: thin; scrollbar-color: #424242 transparent; }
+    *::-webkit-scrollbar { width: 6px; height: 6px; }
+    *::-webkit-scrollbar-thumb { background: #424242; border-radius: 9999px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+
+    textarea { resize: none; }
+    textarea:focus, input:focus { outline: none; box-shadow: none; }
+
+    #sidebar { transition: transform .25s ease, width .25s ease, margin .25s ease; }
+    @media (min-width: 768px) { #sidebar.collapsed { margin-left: -260px; } }
+
+    .prose { max-width: none; color: #ececec; }
+    .prose :where(p) { margin: .75em 0; }
+    .prose :where(h1,h2,h3,h4) { color: #ececec; }
+    .prose :where(strong) { color: #ececec; }
+    .prose :where(a) { color: #7ab7ff; }
+    .prose :where(li) { margin: .25em 0; }
+    .prose :where(blockquote) { border-left-color: #424242; color: #b4b4b4; }
+    .prose :where(hr) { border-color: #424242; }
+    .prose :where(th) { color: #ececec; border-bottom-color: #424242; }
+    .prose :where(td) { border-bottom-color: #2f2f2f; }
+    .prose :where(table) { display: block; overflow-x: auto; }
+    .prose :where(code)::before, .prose :where(code)::after { content: none; }
+    .prose :where(code):not(pre code) { background: #2f2f2f; color: #ececec; padding: .15em .4em; border-radius: .3rem; font-weight: 500; font-size: .9em; }
+    .prose :where(pre) { margin: 0; padding: 0; background: transparent; }
+
+    .code-block { margin: 1rem 0; border-radius: .75rem; overflow: hidden; background: #0d0d0d; }
+    .code-block-header { display: flex; align-items: center; justify-content: space-between; padding: .5rem 1rem; font-size: .75rem; background: #2f2f2f; color: #b4b4b4; }
+    .code-block pre { margin: 0 !important; }
+    .code-block pre code.hljs { background: #0d0d0d; padding: 1rem; font-size: .875rem; line-height: 1.65; }
+    .copy-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .4rem; border-radius: .375rem; color: #ececec; }
+    .copy-btn:hover { background: #424242; }
+
+    .typing-cursor > :last-child::after, .typing-cursor:empty::after {
+      content: ''; display: inline-block; width: .55em; height: .55em; margin-left: .2em;
+      background: #ececec; border-radius: 9999px; vertical-align: baseline; animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 50% { opacity: .3; } }
+
+    .user-bubble { white-space: pre-wrap; word-break: break-word; }
+
+    .menu-pop { animation: pop .12s ease-out; transform-origin: top left; }
+    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+
+<body class="font-sans bg-gpt-main text-gpt-text h-screen overflow-hidden">
+
+  <!-- ============================ AUTH ============================ -->
+  <div id="auth-view" class="hidden fixed inset-0 z-50 bg-gpt-main items-center justify-center px-4">
+    <div class="w-full max-w-[360px]">
+      <div class="flex justify-center mb-8">
+        <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center text-xl font-bold">B</div>
+      </div>
+      <h1 id="auth-title" class="text-[28px] font-semibold text-center mb-8">Tekrar hoş geldin</h1>
+
+      <form id="auth-form" class="space-y-4" autocomplete="on">
+        <div>
+          <input id="auth-username" type="text" placeholder="Kullanıcı adı" autocomplete="username" required
+            class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
+        </div>
+        <div>
+          <input id="auth-password" type="password" placeholder="Şifre" autocomplete="current-password" required
+            class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
+        </div>
+        <div id="auth-password2-wrap" class="hidden">
+          <input id="auth-password2" type="password" placeholder="Şifre (tekrar)" autocomplete="new-password"
+            class="w-full h-[52px] rounded-lg border border-gpt-border bg-transparent px-4 text-[15px] placeholder-gpt-dim focus:border-[#10a37f]" />
+        </div>
+        <p id="auth-error" class="hidden text-sm text-red-400"></p>
+        <button id="auth-submit" type="submit"
+          class="w-full h-[52px] rounded-full bg-white text-black font-medium hover:bg-gpt-text transition-colors disabled:opacity-60">
+          Devam et
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-gpt-muted mt-6">
+        <span id="auth-switch-text">Hesabın yok mu?</span>
+        <button id="auth-switch" type="button" class="text-[#10a37f] hover:underline ml-1">Kaydol</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================ APP ============================ -->
+  <div id="app" class="hidden h-full w-full">
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar"
+      class="fixed md:relative inset-y-0 left-0 z-40 w-[260px] shrink-0 flex flex-col bg-gpt-side -translate-x-full md:translate-x-0">
+
+      <div class="flex items-center justify-between h-14 px-3">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center">
+          <div class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">B</div>
+        </div>
+        <button id="collapse-sidebar-btn" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted" title="Kenar çubuğunu kapat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+        </button>
+      </div>
+
+      <nav class="px-2 space-y-0.5">
+        <button id="new-chat-btn" class="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm hover:bg-gpt-hover">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Yeni sohbet
+        </button>
+        <button id="search-toggle-btn" class="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm hover:bg-gpt-hover">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          Sohbetlerde ara
+        </button>
+        <div id="search-wrap" class="hidden px-1 pt-1">
+          <input id="search-input" type="text" placeholder="Ara..."
+            class="w-full h-9 rounded-lg bg-gpt-input border border-gpt-border px-3 text-sm placeholder-gpt-dim" />
+        </div>
+      </nav>
+
+      <div id="history-scroll" class="flex-1 overflow-y-auto px-2 mt-4 pb-2">
+        <div id="history-groups"></div>
+        <p id="history-empty" class="hidden px-3 py-4 text-xs text-gpt-dim">Henüz sohbet yok.</p>
+      </div>
+
+      <div class="p-2 relative">
+        <div id="user-menu" class="hidden menu-pop absolute bottom-full left-2 right-2 mb-1 bg-gpt-input border border-gpt-border rounded-2xl p-1.5 shadow-xl z-50">
+          <button id="clear-all-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gpt-hover2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+            Tüm sohbetleri sil
+          </button>
+          <div class="h-px bg-gpt-border my-1"></div>
+          <button id="logout-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gpt-hover2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Çıkış yap
+          </button>
+        </div>
+        <button id="user-btn" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gpt-hover text-sm">
+          <div id="user-avatar" class="w-8 h-8 rounded-full bg-[#5436da] flex items-center justify-center text-white text-xs font-semibold">?</div>
+          <div class="flex-1 text-left leading-tight">
+            <p id="user-name" class="font-medium truncate">Kullanıcı</p>
+            <p class="text-xs text-gpt-dim">Ücretsiz</p>
+          </div>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col min-w-0 h-full relative bg-gpt-main">
+
+      <header class="flex items-center justify-between h-14 px-2 md:px-3 shrink-0 relative">
+        <div class="flex items-center gap-1">
+          <button id="open-sidebar-btn" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted md:hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <button id="expand-sidebar-btn" class="hidden w-9 h-9 rounded-lg hover:bg-gpt-hover md:flex items-center justify-center text-gpt-muted" title="Kenar çubuğunu aç">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          </button>
+
+          <div class="relative">
+            <button id="model-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-gpt-hover text-lg font-medium text-gpt-muted">
+              <span id="model-name" class="text-gpt-text">BurhanGPT</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="model-menu" class="hidden menu-pop absolute top-full left-0 mt-1 w-80 bg-gpt-input border border-gpt-border rounded-2xl p-1.5 shadow-2xl z-50">
+              <p class="px-3 py-2 text-xs text-gpt-dim">Model</p>
+              <div id="model-options"></div>
+            </div>
+          </div>
+        </div>
+
+        <button id="header-new-chat" class="w-9 h-9 rounded-lg hover:bg-gpt-hover flex items-center justify-center text-gpt-muted md:hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </header>
+
+      <div id="chat-container" class="flex-1 overflow-y-auto">
+        <div id="empty-state" class="h-full flex flex-col items-center justify-center px-4 pb-16">
+          <h1 class="text-[28px] md:text-[32px] font-medium text-center mb-6">Bugün ne yapıyorsun?</h1>
+          <div id="composer-center" class="w-full"></div>
+        </div>
+        <div id="messages" class="hidden pt-2 pb-6"></div>
+      </div>
+
+      <button id="scroll-bottom-btn"
+        class="hidden absolute left-1/2 -translate-x-1/2 bottom-[120px] w-8 h-8 rounded-full bg-gpt-input border border-gpt-border shadow flex items-center justify-center text-gpt-text hover:bg-gpt-hover2 z-10">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      </button>
+
+      <div id="composer-bottom" class="shrink-0"></div>
+    </main>
+  </div>
+
+  <!-- COMPOSER (JS ile taşınır) -->
+  <div id="composer" class="w-full max-w-3xl mx-auto px-3 md:px-4">
+    <form id="chat-form" class="bg-gpt-input rounded-[26px] px-3 py-2 flex items-end gap-2 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+      <button type="button" id="attach-btn" title="Yakında" class="w-8 h-8 mb-0.5 rounded-full hover:bg-gpt-hover2 flex items-center justify-center text-gpt-text shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <textarea id="user-input" rows="1" placeholder="Herhangi bir şey sor"
+        class="flex-1 bg-transparent border-0 text-[16px] leading-6 max-h-52 py-1.5 placeholder-gpt-dim text-gpt-text"></textarea>
+      <button id="send-btn" type="submit" disabled aria-label="Gönder"
+        class="w-8 h-8 mb-0.5 rounded-full flex items-center justify-center shrink-0 bg-white text-black transition-colors disabled:bg-[#676767] disabled:text-[#2f2f2f] disabled:cursor-not-allowed">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+      <button id="stop-btn" type="button" aria-label="Durdur"
+        class="hidden w-8 h-8 mb-0.5 rounded-full items-center justify-center shrink-0 bg-white text-black">
+        <span class="w-2.5 h-2.5 bg-black rounded-[2px]"></span>
+      </button>
+    </form>
+    <p class="text-center text-xs text-gpt-dim py-2">BurhanGPT hata yapabilir. Önemli bilgileri kontrol edin.</p>
+  </div>
+
+  <!-- Sohbet öğesi menüsü -->
+  <div id="ctx-menu" class="hidden menu-pop fixed z-[60] w-48 bg-gpt-input border border-gpt-border rounded-xl p-1.5 shadow-2xl">
+    <button data-action="rename" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gpt-hover2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Yeniden adlandır
+    </button>
+    <button data-action="delete" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-400 hover:bg-gpt-hover2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+      Sil
+    </button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
